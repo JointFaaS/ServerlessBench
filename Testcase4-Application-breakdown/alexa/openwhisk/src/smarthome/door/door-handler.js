@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 Institution of Parallel and Distributed Systems 
+ * Copyright 2020 Institution of Parallel and Distributed Systems
  *
  *
  * This file is modified from the original file (lambda/custom/index.js)
  * from https://github.com/alexa/skill-sample-nodejs-fact.
  * Changes include:
- *     Adding smarthome-skill logics.
+ *     Adding door controller logics for smarthome-skill.
  *     Supporting skill holding in OpenWhisk instead of AWS Lambda.
  *     Moving language handling (LocalizationInterceptor) to ../infra/language.js.
  */
@@ -24,93 +24,34 @@
  */
 
 //
-// Alexa Smarthome Skill
+// Smart home skill -- door controller
 //
 
 // sets up dependencies
 const {
     SkillBuilders,
-    getRequestType,
-    getIntentName,
-    getSlotValue
+    getRequestType
 } = require('ask-sdk-core');
 const LocalizationInterceptor = require('./infra/language').LocalizationInterceptor;
+const net = require('./net')
 
-const InteractionModel = require('./infra/model/InteractionModel').InteractionModel;
-const SkillRequest = require('./infra/SkillRequest').SkillRequest;
-const SkillInteractor = require('./infra/SkillInteractor').SkillInteractor;
-const SkillContext = require('./infra/SkillContext').SkillContext;
 
-async function enterHome(password) {
-    // send command to each devices
-    // TODO: construct context from caller instead of creating new one
-    var model = InteractionModel.fromFile('./en-US.json');
-    var context = new SkillContext(model);
-    context.newSession();
-    var interactor = new SkillInteractor(context);
-
-    var req = new SkillRequest(context).launch();
-
-    var ps = [
-        interactor.callSkill(req, 'home-door'),
-        interactor.callSkill(req, 'home-light'),
-        interactor.callSkill(req, 'home-tv'),
-        interactor.callSkill(req, 'home-air-conditioning'),
-        interactor.callSkill(req, 'home-plug')
-    ];
-    
-    var results = await Promise.all(ps);
-
-    var speakOutput = results[0]['response'];
-    speakOutput += ', ' + results[1]['response'];
-    speakOutput += ', ' + results[2]['response'];
-    speakOutput += ', ' + results[3]['response'];
-    speakOutput += ', ' + results[4]['response'];
-
-    /*var startTimes = [
-            'door-controller': results[0]['startTimes']['door-controller'], 
-            'light-controller': results[1]['startTimes']['light-controller'], 
-            'tv-controller': results[2]['startTimes']['tv-controller'], 
-            'air-conditioning-controller': results[3]['startTimes']['air-conditioning-controller'], 
-            'plug-controller': results[4]['startTimes']['plug-controller']
-    ];*/
-    var startTimes = [results[0]['startTimes'], results[1]['startTimes'], results[2]['startTimes'], results[3]['startTimes'], results[4]['startTimes']];
-    return [speakOutput, startTimes];
-}
-
-// core functionality for smarthome skill
-const EnterHomeHandler = {
+// core functionality for door control
+const OpenDoorHandler = {
   canHandle(handlerInput) {
     const requestEnv = handlerInput.requestEnvelope;
 
     // checks request type
-    return (getRequestType(requestEnv) === 'IntentRequest'
-        && getIntentName(requestEnv) === 'EnterHomeIntent');
+    return getRequestType(requestEnv) === 'LaunchRequest';
   },
   async handle(handlerInput) {
     console.log('request: ' + JSON.stringify(handlerInput.requestEnvelope.request));
-    const password = getSlotValue(handlerInput.requestEnvelope, 'password');
-    const smarthome_password = handlerInput.requestEnvelope.SMARTHOME_PASSWORD;
 
-    var enterRes;
-    var startTimes;
-    if (password !== smarthome_password) {
-        enterRes = 'wrong-token';
-    }
-    else {
-        enterRes = await enterHome(password);
-        startTimes = enterRes[1];
-    }
-    var speakOutput = enterRes[0];
-    console.log('callSkill result: ' + speakOutput);
+      var body = {'req_switch': 'ON'};
+      // var speakOutput = await net.SendRequest('http://' + handlerInput.requestEnvelope.IP + ':' + handlerInput.requestEnvelope.PORT, body);
+      let speakOutput = "door switch: ON"
 
-    return handlerInput.responseBuilder
-      .speak(speakOutput)
-      // Uncomment the next line if you want to keep the session open so you can
-      // ask for another fact without first re-opening the skill
-      // .reprompt(requestAttributes.t('HELP_REPROMPT'))
-      .withSimpleCard("startTimes", startTimes)
-      .getResponse();
+    return speakOutput;
   },
 };
 
@@ -187,13 +128,12 @@ const ErrorHandler = {
   },
 };
 
-
 //const skillBuilder = Alexa.SkillBuilders.custom();
 const skillBuilder = SkillBuilders.custom();
 
 exports.handler = skillBuilder
   .addRequestHandlers(
-    EnterHomeHandler,
+    OpenDoorHandler,
     HelpHandler,
     ExitHandler,
     FallbackHandler,
@@ -201,6 +141,6 @@ exports.handler = skillBuilder
   )
   .addRequestInterceptors(LocalizationInterceptor)
   .addErrorHandlers(ErrorHandler)
-  .withCustomUserAgent('sample/basic-fact/v2')
   //.lambda();
   .create();
+

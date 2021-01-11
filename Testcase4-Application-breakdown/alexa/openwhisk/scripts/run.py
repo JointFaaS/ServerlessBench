@@ -19,16 +19,16 @@ import sys, getopt
 def client(i,results,loopTimes):
     print("client %d start" %i)
     command = "./scripts/run-single.sh -R -t " + str(loopTimes)
-    r = os.popen(command)  
-    text = r.read()  
+    r = os.popen(command)
+    text = r.read()
     results[i] = text
     print("client %d finished" %i)
 
 def warmup(i,warmupTimes):
     for j in range(warmupTimes):
-        r = os.popen("./scripts/action_invoke.sh")  
-        text = r.read() 
-    print("client %d warmup finished" %i) 
+        r = os.popen("./scripts/action_invoke.sh")
+        text = r.read()
+    print("client %d warmup finished" %i)
 
 def main():
     argv = getargv()
@@ -36,11 +36,11 @@ def main():
     loopTimes = argv[1]
     warmupTimes = argv[2]
     threads = []
-    
+
     containerName = "alexa"
 
-    r = os.popen("docker stop `docker ps | grep %s | awk {'print $1'}`" %containerName)
-    r.read()
+#     r = os.popen("docker stop `docker ps | grep %s | awk {'print $1'}`" %containerName)
+#     r.read()
 
     # First: warm up
     for i in range(clientNum):
@@ -51,7 +51,7 @@ def main():
         threads[i].start()
 
     for i in range(clientNum):
-        threads[i].join()    
+        threads[i].join()
     print("Warm up complete")
     # Second: invoke the actions
     # Initialize the results and the clients
@@ -76,7 +76,7 @@ def main():
 
     outfile = open("result.csv","w")
     outfile.write("invokeTime,endTime\n")
-   
+
     latencies = []
     minInvokeTime = 0x7fffffffffffffff
     maxEndTime = 0
@@ -85,8 +85,8 @@ def main():
         clientResult = parseResult(results[i])
         # print the result of every loop of the client
         for j in range(len(clientResult)):
-            outfile.write(clientResult[j][0] + ',' + clientResult[j][1] + '\n') 
-        
+            outfile.write(clientResult[j][0] + ',' + clientResult[j][1] + '\n')
+
             # Collect the latency
             latency = int(clientResult[j][-1]) - int(clientResult[j][0])
             latencies.append(latency)
@@ -117,7 +117,7 @@ def parseResult(result):
                     count += 1
                     continue
                 i += 1
-        
+
         parsedResults.append(parsedTimes)
     return parsedResults
 
@@ -129,7 +129,7 @@ def getargv():
         print("Usage: python3 run.py <client number> <loop times> [<warm up times>]")
         print("Client number and loop times must be an positive integer")
         exit(0)
-    
+
     if len(sys.argv) == 4:
         if not str.isdigit(sys.argv[3]) or int(sys.argv[3]) < 1:
             print("Usage: python3 run.py <client number> <loop times> [<warm up times>]")

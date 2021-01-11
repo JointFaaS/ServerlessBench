@@ -26,7 +26,7 @@ function main(params) {
     var datestr = "[" + year + "-" + month + "-" + day + "T" + hour + ":" + minute + ":" + second + "." + millisecond + "Z]";
 
     console.log('skill:', params.skill, ', utter:', params.utter);
-    var alexa = new va.VirtualAlexa('./models/model-'+params.skill+'.json');
+    var alexa = new va.VirtualAlexa(__dirname + '/models/model-'+params.skill+'.json');
     return alexa.utter(params.utter, params.skill).then ( results => {
 	results['startTimes'] = {"skill": results['startTimes'], "interact": datestr};
         return results;

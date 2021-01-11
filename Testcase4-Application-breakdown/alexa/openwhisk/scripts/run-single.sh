@@ -26,7 +26,7 @@ while getopts "r:m:t:w:lWR" OPT; do
     r)
         RESULT=$OPTARG
         ;;
-    
+
     # Mode: cold or warm.
     m)
         MODE=$OPTARG
@@ -37,7 +37,7 @@ while getopts "r:m:t:w:lWR" OPT; do
             exit
         fi
         ;;
-    
+
     # The loop time
     t)
         TIMES=$OPTARG
@@ -47,7 +47,7 @@ while getopts "r:m:t:w:lWR" OPT; do
             exit
         fi
         ;;
-    
+
     # The warm up times
     w)
         WARMUP=$OPTARG
@@ -72,7 +72,7 @@ while getopts "r:m:t:w:lWR" OPT; do
         echo "Warm up only mode."
         WARMUPONLY=true
         ;;
-    
+
     # "Run only" with this argument: invoke the first action without warm up. Paused containers are needed.
     R)
         if [[ $WARMUPONLY = true ]]; then
@@ -80,10 +80,10 @@ while getopts "r:m:t:w:lWR" OPT; do
             exit
         fi
         # If there's no paused container, the mode should not be supported
-        if [[ -z `docker ps | grep $CONTAINERNAME | awk {'print $1'}` ]];then
-            echo "Error: could not find paused containers of the action"
-            exit
-        fi
+#        if [[ -z `docker ps | grep $CONTAINERNAME | awk {'print $1'}` ]];then
+#            echo "Error: could not find paused containers of the action"
+#            exit
+#        fi
         echo "Run only mode"
         RUNONLY=true
         ;;
@@ -115,10 +115,10 @@ fi
 # mode = warm: kill all the running containers and then warm up
 if [[ $MODE = "warm" && $RUNONLY = false ]]; then
     echo "Warm up.."
-    if [[ -n `docker ps | grep $CONTAINERNAME | awk {'print $1'}` ]];then
-        echo 'Stop the running container..'
-        docker stop `docker ps | grep $CONTAINERNAME | awk {'print $1'}`
-    fi
+#    if [[ -n `docker ps | grep $CONTAINERNAME | awk {'print $1'}` ]];then
+#        echo 'Stop the running container..'
+#        docker stop `docker ps | grep $CONTAINERNAME | awk {'print $1'}`
+#    fi
     for i in $(seq 1 $WARMUP)
     do
         echo "The $i-th warmup..."
@@ -143,14 +143,14 @@ LATENCYSUM=0
 
 for i in $(seq 1 $TIMES)
 do
-    if [[ $MODE = 'cold' ]]; then
-        echo 'Stop the running container..'
-        docker stop `docker ps | grep $CONTAINERNAME | awk {'print $1'}`
-    fi
+#    if [[ $MODE = 'cold' ]]; then
+#        echo 'Stop the running container..'
+#        docker stop `docker ps | grep $CONTAINERNAME | awk {'print $1'}`
+#    fi
 
     echo Measure $MODE start up time: no.$i
 
-    oldIFS="$IFS"    
+    oldIFS="$IFS"
     invokeTime=`date +%s%3N`
     IFS=$'\n' output=( $($SCRIPTS_DIR/action_invoke.sh) )
     endTime=`date +%s%3N`

@@ -1,5 +1,5 @@
 {
-  "name": "interact",
+  "name": "fact",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "openwhisk": "^3.18.0"
+    "ask-sdk-core": "^2.0.0",
+    "ask-sdk-model": "^1.0.0",
+    "i18next": "^15.0.5"
   }
 }

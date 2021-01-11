@@ -1,13 +1,13 @@
 /*
  * Copyright 2020 Institution of Parallel and Distributed Systems 
  *
+ * This file is modifed from the original file (lambda/custom/index.js) 
+ * from https://github.com/alexa/skill-sample-nodejs-fact. 
+ * It has been modified by to be hosted in OpenWhisk, instead of in AWS Lambda
+ * as in the original file.
  *
- * This file is modified from the original file (lambda/custom/index.js)
- * from https://github.com/alexa/skill-sample-nodejs-fact.
- * Changes include:
- *     Adding door controller logics for smarthome-skill.
- *     Supporting skill holding in OpenWhisk instead of AWS Lambda.
- *     Moving language handling (LocalizationInterceptor) to ../infra/language.js.
+ * The language handling (LocalizationInterceptor) part of the original file
+ * is moved to a separated file in ../infra/language.js.
  */
 
 /*
@@ -24,33 +24,39 @@
  */
 
 //
-// Smart home skill -- door controller
+// Alexa Fact Skill - Sample for Beginners
 //
 
 // sets up dependencies
-const {
-    SkillBuilders,
-    getRequestType
-} = require('ask-sdk-core');
+const Alexa = require('ask-sdk-core');
+const i18n = require('i18next');
 const LocalizationInterceptor = require('./infra/language').LocalizationInterceptor;
-const net = require('./net')
 
-
-// core functionality for door control
-const OpenDoorHandler = {
+// core functionality for fact skill
+const GetNewFactHandler = {
   canHandle(handlerInput) {
-    const requestEnv = handlerInput.requestEnvelope;
-
+    const request = handlerInput.requestEnvelope.request;
     // checks request type
-    return getRequestType(requestEnv) === 'LaunchRequest';
+    return request.type === 'LaunchRequest'
+      || (request.type === 'IntentRequest'
+        && request.intent.name === 'GetNewFactIntent');
   },
-  async handle(handlerInput) {
-    console.log('request: ' + JSON.stringify(handlerInput.requestEnvelope.request));
+  handle(handlerInput) {
+    const requestAttributes = handlerInput.attributesManager.getRequestAttributes();
+    // gets a random fact by assigning an array to the variable
+    // the random item from the array will be selected by the i18next library
+    // the i18next library is set up in the Request Interceptor
+    const randomFact = requestAttributes.t('FACTS');
+    // concatenates a standard message with the random fact
+    const speakOutput = requestAttributes.t('GET_FACT_MESSAGE') + randomFact;
 
-    var body = {'req_switch': 'ON'};
-    var speakOutput = await net.SendRequest('http://' + handlerInput.requestEnvelope.IP + ':' + handlerInput.requestEnvelope.PORT, body);
-
-    return speakOutput;
+    return handlerInput.responseBuilder
+      .speak(speakOutput)
+      // Uncomment the next line if you want to keep the session open so you can
+      // ask for another fact without first re-opening the skill
+      // .reprompt(requestAttributes.t('HELP_REPROMPT'))
+      .withSimpleCard(requestAttributes.t('SKILL_NAME'), randomFact)
+      .getResponse();
   },
 };
 
@@ -127,12 +133,11 @@ const ErrorHandler = {
   },
 };
 
-//const skillBuilder = Alexa.SkillBuilders.custom();
-const skillBuilder = SkillBuilders.custom();
+const skillBuilder = Alexa.SkillBuilders.custom();
 
 exports.handler = skillBuilder
   .addRequestHandlers(
-    OpenDoorHandler,
+    GetNewFactHandler,
     HelpHandler,
     ExitHandler,
     FallbackHandler,
@@ -140,6 +145,6 @@ exports.handler = skillBuilder
   )
   .addRequestInterceptors(LocalizationInterceptor)
   .addErrorHandlers(ErrorHandler)
+  .withCustomUserAgent('sample/basic-fact/v2')
   //.lambda();
   .create();
-
